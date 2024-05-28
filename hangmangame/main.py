@@ -1,4 +1,4 @@
-from hangman_game import HangmanGame
+from .hangman_game import HangmanGame
 
 
 def main():

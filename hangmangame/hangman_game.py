@@ -2,8 +2,8 @@ import logging
 import random
 import requests
 
-import exceptions as ex
-import constants as c
+from . import exceptions as ex
+from . import constants as c
 
 
 class HangmanGame:
