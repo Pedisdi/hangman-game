@@ -8,3 +8,6 @@ class WrongGuessError(Exception):
 
 class InvalidInputError(ValueError):
     pass
+
+class CanNotSetWord(Exception):
+    pass

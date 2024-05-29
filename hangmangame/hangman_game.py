@@ -18,19 +18,36 @@ class HangmanGame:
         # TODO: https://requests.readthedocs.io/en/latest/user/quickstart/#errors-and-exceptions
 
         try:
-            response = requests.get(c.API_URL, params=c.PAYLOAD, headers=c.KEY, timeout=1.001)
+            response = requests.get(c.API_URL, params=c.PAYLOAD, headers=c.API_KEY, timeout=1.5)
             response.raise_for_status()
         except requests.exceptions.RequestException as e:
             logging.error(e)
+            return None
         else:
             return response.json()['word']
 
     @staticmethod
-    def get_word_from_offline_word_list() -> str:
+    def get_word_from_offline_word_list() -> str | None:
         # TODO: IndexError
         if c.OFFLINE_WORD_LIST:
             return random.choice(c.OFFLINE_WORD_LIST)
-        raise IndexError('Offline word list is empty.')
+        return None
+        # raise IndexError('Offline word list is empty.')
+
+    def set_word(self):
+        word = (self.get_word_from_api() or self.get_word_from_offline_word_list())
+
+        if not word:
+            raise ex.CanNotSetWord('Can not set word both with api and offline ways')
+        self.word = word.strip().upper()
+
+    def setup_game(self):
+        """
+        :raise:  CanNotSetWord
+        """
+        self.set_word()
+        self.guessed_letters = {str(i + 1): None for i in range(len(self.word))}
+        self.remained_try = len(self.word) * 3
 
     def is_finished(self) -> str:
         if all([letter is not None for letter in self.guessed_letters.values()]):
@@ -44,11 +61,6 @@ class HangmanGame:
         self.word = ''
         self.guessed_letters = {}
 
-    def setup_game(self):
-        self.word = (self.get_word_from_api() or self.get_word_from_offline_word_list()).strip().upper()
-        self.guessed_letters = {str(i + 1): None for i in range(len(self.word))}
-        self.remained_try = len(self.word) * 3
-
     def get_guessed_letters_str(self) -> str:
         return ' '.join([letter if letter else place for place, letter in self.guessed_letters.items()])
 
@@ -59,9 +71,8 @@ class HangmanGame:
         else:
             raise ex.WrongGuessError("Your guess was wrong, try again")
 
-    def replay(self):
-        replay = input('Do you want to play again?(y/n) ').strip().lower()
-        if replay == 'y':
+    def replay(self, answer):
+        if answer == 'y':
             self.reset_game()
             self.play()
 
@@ -74,8 +85,10 @@ class HangmanGame:
             print(f'\nremained try: {self.remained_try}')
             print(f"guessed_letters: {self.get_guessed_letters_str()}")
             try:
-                place = self.get_place()  # Error -> play()
-                letter = self.get_letter()  # Error -> play()
+                place = input('place: ').strip()
+                place = self.is_valid_place(place)  # Error -> play()
+                letter = input('letter: ').strip()
+                letter = self.is_valid_letter(letter)  # Error -> play()
                 self.evaluate_guess(place, letter)  # Error -> finish() -> GameNotFinishedError -> play()
             except ex.InvalidInputError as e:
                 print(e)
@@ -88,10 +101,10 @@ class HangmanGame:
                 continue
             print(f"You {result}!")
             break
-        self.replay()
+        answer = input('Do you want to play again?(y/n) ').strip().lower()
+        self.replay(answer)
 
-    def get_place(self) -> str:
-        place = input('place: ').strip()
+    def is_valid_place(self, place: str) -> str:
         if place in self.guessed_letters and self.guessed_letters[place] is None:
             return place
         elif place not in self.guessed_letters:
@@ -99,8 +112,7 @@ class HangmanGame:
         raise ex.InvalidInputError("You've already guessed this letter correctly")
 
     @staticmethod
-    def get_letter():
-        letter = input('letter: ').strip()
+    def is_valid_letter(letter):
         if letter.isalpha() and len(letter) == 1:
             return letter.upper()
         raise ex.InvalidInputError('Letter should be an single alphabetic character.')
@@ -110,5 +122,5 @@ if __name__ == '__main__':
     g = HangmanGame()
     try:
         g.play()
-    except IndexError:
+    except ex.CanNotSetWord:
         exit()

@@ -1,7 +1,7 @@
 from dotenv import dotenv_values
 
 API_URL = 'https://api.api-ninjas.com/v1/randomword'
-KEY = {'X-Api-Key': dotenv_values('.env')['api_key']}
+API_KEY = {'X-Api-Key': dotenv_values('.env')['api_key']}
 PAYLOAD = {'type': 'noun'}
 OFFLINE_WORD_LIST = ["aback", "abaft", "abandoned", "abashed", "aberrant", "abhorrent", "abiding", "abject", "ablaze",
                      "able",
